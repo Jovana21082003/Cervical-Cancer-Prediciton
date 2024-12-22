@@ -13,7 +13,7 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import HuberRegressor
 
-df= pd.read_csv("/Users/jovanavlaskalic/Desktop/Projekat_NANS/data.csv")
+df= pd.read_csv("/Users/jovanavlaskalic/Projekat_NANS/data.csv")
 
 # 1. PRETPROCESIRANJE PODATAKA
 
@@ -167,7 +167,7 @@ print(f"RMSE za test skup PCA modela je {test_rmse:.5f}")
 
 #TEST na heteroscedasticity
 names = ['Lagrange multiplier statistic', 'p-value', 'f-value', 'f p-value']
-test_result = sms.het_breuschpagan(model.resid, x_pom)
+test_result = sms.het_breuschpagan(model.resid, sm.add_constant(principal_components_train_reduced))
 zip=lzip(names, test_result)
 print(zip)
 test_stat, p_value, _, _ = het_white(model.resid, x_pom)
@@ -187,10 +187,10 @@ r2_test = r2_score(y_test, y_pred)
 y_pred_val = ransac_model.predict(principal_components_val_reduced)
 r2_val = r2_score(y_val, y_pred_val)
 
-n_train = principal_components_train.shape[0]
-n_test = principal_components_test.shape[0]
-n_val = principal_components_val.shape[0]
-p = principal_components_train.shape[1]
+n_train = principal_components_train_reduced.shape[0]
+n_test = principal_components_test_reduced.shape[0]
+n_val = principal_components_val_reduced.shape[0]
+p = principal_components_train_reduced.shape[1]
 
 # Adjusted R² za svaki skup
 adj_r2_train = 1 - ((1 - r2_train) * (n_train - 1)) / (n_train - p - 1)
