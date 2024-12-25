@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import HuberRegressor
+import seaborn as sns
 
 df= pd.read_csv("/Users/jovanavlaskalic/Projekat_NANS/data.csv")
 
@@ -37,6 +38,32 @@ bool_columns = df.select_dtypes(include='bool').columns
 df[bool_columns] = df[bool_columns].astype(int)
 #print(df.head()) 
 
+#Vizualizacija 
+#total_cancer = df['Is_Diagnosis_Cancer'].value_counts()
+#cancer_with_hpv = df[(df['Is_On_Hormonal_Contraceptives'] == 1) & (df['Is_Diagnosis_Cancer'] == 1)].shape[0]
+#nocancer_with_hpv = df[(df['Is_On_Hormonal_Contraceptives'] == 1) & (df['Is_Diagnosis_Cancer'] == 0)].shape[0]
+# Priprema podataka za prikaz
+#data = {
+ #   "Grupa": ["Ukupan broj žena sa kancerom", "Broj žena sa kancerom koje su koristile kontraceptivne pilule", 
+  #            "Ukupan broj žena bez kancera", "Broj žena bez kancera i koje su koristile kontraceptivne pilule"],
+  #  "Broj": [total_cancer[1], cancer_with_hpv, 
+   #          total_cancer[0], nocancer_with_hpv]
+#}
+
+#viz_data = pd.DataFrame(data)
+#
+# Vizualizacija podataka
+#plt.figure(figsize=(10, 6))
+#sns.barplot(x="Grupa", y="Broj", data=viz_data, palette="flare")
+
+# Postavljanje naslova i oznaka
+#plt.title("Odnos između raka i upotrebe kontraceptivnih pilula", fontsize=14)
+#plt.xlabel("")
+#plt.ylabel("Broj pacijentkinja", fontsize=12)
+#plt.xticks(rotation=20, fontsize=10)
+#plt.tight_layout()
+#plt.show()
+
 # Normalizovanje vrednosti 
 scaler = MinMaxScaler()
 df= pd.DataFrame(scaler.fit_transform(df), columns = df.columns)
@@ -47,16 +74,6 @@ df= pd.DataFrame(imputer.fit_transform(df),columns = df.columns)
 #print(df_sklearn_encoded.iloc[37:45])
 #print(df_sklearn_encoded.isna().sum())
 
-#Vizualizacija 
-#left_percentage = (df['Is_Diagnosis_Cancer'].sum() / len(df)) * 100
-#not_left_percentage = 100 - left_percentage
-##vrednosti = ['Kancer', 'Nije kancer']
-#values = [left_percentage, not_left_percentage]
-#boje = ['#FF9999', '#66B2FF']
-#plt.pie(values, labels=vrednosti, colors=boje, autopct='%1.1f%%', startangle=90)
-#plt.title('Procenat obolelih')
-#plt.tight_layout()
-#plt.show()
 
 x = df.drop(columns=['Is_Diagnosis_Cancer'])
 y = df['Is_Diagnosis_Cancer']
@@ -130,36 +147,31 @@ principal_components_train = pca_model.fit_transform(x_train)
 print(f'UKUPNA VARIJANSA: {sum(pca_model.explained_variance_ratio_) * 100:.1f}%')
 #varijansa obuhvaćenih podataka je 95.5%
 
-#uklanjanje komponenti zbog male p-vrednosti
-principal_components_train_reduced = np.delete(principal_components_train, [3,10], axis=1)
 
 principal_components_val = pca_model.transform(x_val)
 principal_components_test = pca_model.transform(x_test)
 
-# Uklanjanje 4. i 11. komponente (indeksi 3 i 10) iz test i validation skupa
-principal_components_val_reduced = np.delete(principal_components_val, [3,10], axis=1)
-principal_components_test_reduced = np.delete(principal_components_test, [3,10], axis=1)
 
-modelPCA = get_fitted_model(principal_components_train_reduced, y_train)
+modelPCA = get_fitted_model(principal_components_train, y_train)
 
 principal_components_val = pca_model.transform(x_val)
 principal_components_test = pca_model.transform(x_test)
 
 # ADJ R^2
-val_rq_pca = get_rsquared_adj(modelPCA, principal_components_val_reduced, y_val)
+val_rq_pca = get_rsquared_adj(modelPCA, principal_components_val, y_val)
 print(f"adj r^2 za validacioni skup PCA modela je {val_rq_pca:.5f}")
-test_rq_pca = get_rsquared_adj(modelPCA, principal_components_test_reduced, y_test)
+test_rq_pca = get_rsquared_adj(modelPCA, principal_components_test, y_test)
 print(f"adj r^2 za test skup PCA modela je {test_rq_pca:.5f}")
 
 #RMSE 
 
-val_rmse = get_rmse(modelPCA, principal_components_val_reduced, y_val)
+val_rmse = get_rmse(modelPCA, principal_components_val, y_val)
 print(f"RMSE za validacioni skup PCA modela je {val_rmse:.5f}")
-test_rmse = get_rmse(modelPCA, principal_components_test_reduced, y_test)
+test_rmse = get_rmse(modelPCA, principal_components_test, y_test)
 print(f"RMSE za test skup PCA modela je {test_rmse:.5f}")
 
 #print(modelPCA.summary())
-#plot_pc_loading(pca_model, 2, x.columns) # negativan koeficijent
+#plot_pc_loading(pca_model, 13, x.columns) 
 #target_col_train = df.loc[x_train.index, 'Is_Diagnosis_Cancer']
 #visualize_principal_components(principal_components_train, n_principal_components=3, target_col=target_col_train)
 
@@ -167,7 +179,7 @@ print(f"RMSE za test skup PCA modela je {test_rmse:.5f}")
 
 #TEST na heteroscedasticity
 names = ['Lagrange multiplier statistic', 'p-value', 'f-value', 'f p-value']
-test_result = sms.het_breuschpagan(model.resid, sm.add_constant(principal_components_train_reduced))
+test_result = sms.het_breuschpagan(model.resid, sm.add_constant(principal_components_train))
 zip=lzip(names, test_result)
 print(zip)
 test_stat, p_value, _, _ = het_white(model.resid, x_pom)
@@ -178,19 +190,19 @@ print(f"White Test p-value: {p_value}")
 #Kreiranje RANSAC modela
 model_pom = HuberRegressor(epsilon=1.35, max_iter=1000)
 ransac = RANSACRegressor(estimator=model_pom, min_samples=0.8, residual_threshold=0.5, max_trials=1000)
-ransac_model = ransac.fit(principal_components_train_reduced, y_train)
-r2_train = ransac.score(principal_components_train_reduced, y_train)
+ransac_model = ransac.fit(principal_components_train, y_train)
+r2_train = ransac.score(principal_components_train, y_train)
 print("RANSAC")
-y_pred = ransac_model.predict(principal_components_test_reduced)
+y_pred = ransac_model.predict(principal_components_test)
 r2_test = r2_score(y_test, y_pred)
 
-y_pred_val = ransac_model.predict(principal_components_val_reduced)
+y_pred_val = ransac_model.predict(principal_components_val)
 r2_val = r2_score(y_val, y_pred_val)
 
-n_train = principal_components_train_reduced.shape[0]
-n_test = principal_components_test_reduced.shape[0]
-n_val = principal_components_val_reduced.shape[0]
-p = principal_components_train_reduced.shape[1]
+n_train = principal_components_train.shape[0]
+n_test = principal_components_test.shape[0]
+n_val = principal_components_val.shape[0]
+p = principal_components_train.shape[1]
 
 # Adjusted R² za svaki skup
 adj_r2_train = 1 - ((1 - r2_train) * (n_train - 1)) / (n_train - p - 1)
@@ -198,17 +210,17 @@ adj_r2_test = 1 - ((1 - r2_test) * (n_test - 1)) / (n_test - p - 1)
 adj_r2_val = 1 - ((1 - r2_val) * (n_val - 1)) / (n_val - p - 1)
 
 # Prikaz rezultata
-print(f"Adjusted R² za RANSAC model: {adj_r2_val:.5f}")
-print(f"Adjusted R² za RANSAC model: {adj_r2_test:.5f}")
+print(f"Adjusted R² za RANSAC model za validacioni skup: {adj_r2_val:.5f}")
+print(f"Adjusted R² za RANSAC model za test skup: {adj_r2_test:.5f}")
 
 rmse_test = np.sqrt(mean_squared_error(y_test, y_pred))
 print(f"RMSE za test skup RANSAC modela: {rmse_test:.5f}")
 rmse_val = np.sqrt(mean_squared_error(y_val, y_pred_val))
 print(f"RMSE za validacioni skup RANSAC modela: {rmse_val:.5f}")
 
-y_pred_ransac_train = ransac_model.predict(principal_components_train_reduced)
-y_pred_ransac_test = ransac_model.predict(principal_components_test_reduced)
-y_pred_ransac_val = ransac_model.predict(principal_components_val_reduced)
+y_pred_ransac_train = ransac_model.predict(principal_components_train)
+y_pred_ransac_test = ransac_model.predict(principal_components_test)
+y_pred_ransac_val = ransac_model.predict(principal_components_val)
 
 
 residuals_train = y_train - y_pred_ransac_train
@@ -217,14 +229,14 @@ residuals_train = y_train - y_pred_ransac_train
 weights_train = np.var(residuals_train)  
 
 # Fit WLS model sa težinama
-wls_model = sm.WLS(y_train, sm.add_constant(principal_components_train_reduced), weights=1/weights_train)
+wls_model = sm.WLS(y_train, sm.add_constant(principal_components_train), weights=1/weights_train)
 wls_results = wls_model.fit()
 
 
 # Predikcije iz WLS modela
-wls_predictions_train = wls_results.predict(sm.add_constant(principal_components_train_reduced))
-wls_predictions_test = wls_results.predict(sm.add_constant(principal_components_test_reduced))
-wls_predictions_val = wls_results.predict(sm.add_constant(principal_components_val_reduced))
+wls_predictions_train = wls_results.predict(sm.add_constant(principal_components_train))
+wls_predictions_test = wls_results.predict(sm.add_constant(principal_components_test))
+wls_predictions_val = wls_results.predict(sm.add_constant(principal_components_val))
 
 # Izračunavanje performansi
 r2_train_wls = r2_score(y_train, wls_predictions_train)
