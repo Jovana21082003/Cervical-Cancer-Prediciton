@@ -13,9 +13,13 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import HuberRegressor
 import seaborn as sns
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+
 
 df= pd.read_csv("/Users/jovanavlaskalic/Projekat_NANS/data.csv")
-
+print(df.shape)
 # 1. PRETPROCESIRANJE PODATAKA
 
 #print(df.isna().sum()) #omogucava da se vidi broj kolona koje ne sadrze ovaj podatak
@@ -74,15 +78,23 @@ df= pd.DataFrame(imputer.fit_transform(df),columns = df.columns)
 #print(df_sklearn_encoded.iloc[37:45])
 #print(df_sklearn_encoded.isna().sum())
 
+#sns.displot(df['Hormonal_Contraceptives_in_Years'])
+#sns.boxplot(df['Age_of_Respondents'])
+index_list = []
+for feature in df.columns:
+ index_list.extend(outliers(df,feature))
 
-x = df.drop(columns=['Is_Diagnosis_Cancer'])
-y = df['Is_Diagnosis_Cancer']
+df_new = remove(df,index_list)
+print(df_new.shape)
+
+x = df_new.drop(columns=['Is_Diagnosis_Cancer'])
+y = df_new['Is_Diagnosis_Cancer']
+#print(df.var())
 
 #plot_correlation_for_col(df, col_name='Is_Diagnosis_Cancer') #najveca pozitivna korelacija sa Is_Diagnosis_HPV, Is_Screening_Biopsy... Negativna Is_STD_Condylomatisis
 #Splitovanje na trening, test i validacioni skup
-
 #Prvo train skup dobije 60%, temporary skup dobije 40%
-x_train, x_temp, y_train, y_temp = train_test_split(x, y, train_size=0.6, shuffle=True, random_state=42)
+x_train, x_temp, y_train, y_temp = train_test_split(x, y,train_size=0.6, shuffle=True, random_state=42)
 
 # Preostalih 40% se podeli i dodeli se test i validacionom skupu
 x_val, x_test, y_val, y_test = train_test_split(x_temp, y_temp, train_size=0.5, shuffle=True, random_state=42)
@@ -125,11 +137,13 @@ if zadovoljene == True:
     print("Sve pretpostavke su zadovoljene")
 else:  print("Nisu sve pretpostavke zadovoljene")
 
+
 # RMSE
 val_rmse = get_rmse(model, x_val, y_val)
 print(f"RMSE za validacioni skup OLS modela je {val_rmse:.5f}")
 test_rmse = get_rmse(model, x_test, y_test)
 print(f"RMSE za test skup OLS modela je {test_rmse:.5f}")
+
 
 
 # ADJ R^2
@@ -141,13 +155,12 @@ print(f"adj r^2 za test skup je {test_rq:.5f}")
 
 #Primena PCA
 
-pca_model = PCA(n_components=14, random_state=42)
+pca_model = PCA(n_components=11, random_state=42)
 principal_components_train = pca_model.fit_transform(x_train)
 #plot_explained_variance(pca_model)
 print(f'UKUPNA VARIJANSA: {sum(pca_model.explained_variance_ratio_) * 100:.1f}%')
 #varijansa obuhvaćenih podataka je 95.5%
-
-
+#plot_correlation_for_col(df_new, col_name='Is_Diagnosis_Cancer')
 principal_components_val = pca_model.transform(x_val)
 principal_components_test = pca_model.transform(x_test)
 
@@ -171,8 +184,9 @@ test_rmse = get_rmse(modelPCA, principal_components_test, y_test)
 print(f"RMSE za test skup PCA modela je {test_rmse:.5f}")
 
 #print(modelPCA.summary())
-#plot_pc_loading(pca_model, 13, x.columns) 
-#target_col_train = df.loc[x_train.index, 'Is_Diagnosis_Cancer']
+#plot_pc_loading(pca_model, 10, x.columns) 
+
+#target_col_train = df_new.loc[x_train.index, 'Is_Diagnosis_Cancer']
 #visualize_principal_components(principal_components_train, n_principal_components=3, target_col=target_col_train)
 
 

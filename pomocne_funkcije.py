@@ -362,3 +362,13 @@ def visualize_principal_components(principal_components:np.ndarray, n_principal_
     
     else: raise Exception('number of principal components must 2  or 3')
 
+def outliers(df, ft):
+    upper_bound = df[ft].quantile(0.99)
+    lower_bound = df[ft].quantile(0.01)
+    ls = df.index[(df[ft]<lower_bound) | (df[ft]>upper_bound)]
+    return ls
+
+def remove(df,ls):
+    ls=sorted(set(ls))
+    df=df.drop(ls)
+    return df
