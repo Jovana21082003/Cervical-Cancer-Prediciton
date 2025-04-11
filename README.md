@@ -1,1 +1,2 @@
-# Projekat_NANS
+# Cervical Cancer Prediction
+The principal aim of this project was cervical cancer prediction. After handling the missing values using (K-Nearest Neighbors) KNN imputation and detecting and removing outliers using the 99th percentile method, several regression models were applied such as (Ordinary Least Squares) OLS, (Weighted Least Squares) WLS and (Random Sample Consensus) RANSAC which were found the most suitable based on prior data analysis. In order to determine the most significant factors for development of cervical cancer prediction (Principal Component Analysis) PCA was used.
